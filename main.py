@@ -5,9 +5,9 @@ import numpy as np
 import supervision as sv
 
 from trackers import (
-    PlayerTracker, 
-    BallTracker, 
-    KeypointsTracker, 
+    PlayerTracker,
+    BallTracker,
+    KeypointsTracker,
     Keypoint,
     Keypoints,
     PlayerKeypointsTracker,
@@ -39,31 +39,30 @@ PADEL COURT KEYPOINTS
         
 """
 
-def click_event(event, x, y, flags, params): 
-  
-    # checking for left mouse clicks 
-    if event == cv2.EVENT_LBUTTONDOWN: 
-  
-        # displaying the coordinates 
-        # on the Shell 
+
+def click_event(event, x, y, flags, params):
+
+    # checking for left mouse clicks
+    if event == cv2.EVENT_LBUTTONDOWN:
+
+        # displaying the coordinates
+        # on the Shell
         SELECTED_KEYPOINTS.append((x, y))
-  
-        # displaying the coordinates 
-        # on the image window 
-        font = cv2.FONT_HERSHEY_SIMPLEX 
-        cv2.putText(img, str(x) + ',' +
-                    str(y), (x,y), font, 
-                    1, (255, 0, 0), 2) 
-        cv2.imshow('frame', img) 
+
+        # displaying the coordinates
+        # on the image window
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(img, str(x) + "," + str(y), (x, y), font, 1, (255, 0, 0), 2)
+        cv2.imshow("frame", img)
 
 
 if __name__ == "__main__":
-    
+
     t1 = timeit.default_timer()
 
     video_info = sv.VideoInfo.from_video_path(video_path=INPUT_VIDEO_PATH)
     fps, w, h, total_frames = (
-        video_info.fps, 
+        video_info.fps,
         video_info.width,
         video_info.height,
         video_info.total_frames,
@@ -82,12 +81,16 @@ if __name__ == "__main__":
         with open(FIXED_COURT_KEYPOINTS_LOAD_PATH, "r") as f:
             SELECTED_KEYPOINTS = json.load(f)
     else:
-        cv2.imshow('frame', img)
-        cv2.setMouseCallback('frame', click_event) 
-        # wait for a key to be pressed to exit 
-        cv2.waitKey(0) 
-        # close the window 
-        cv2.destroyAllWindows() 
+        cv2.namedWindow("frame", cv2.WND_PROP_FULLSCREEN)
+        cv2.setWindowProperty("frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+        cv2.imshow("frame", img)
+
+        cv2.setMouseCallback("frame", click_event)
+        # wait for a key to be pressed to exit
+        cv2.waitKey(0)
+        # close the window
+        cv2.destroyAllWindows()
 
     if FIXED_COURT_KEYPOINTS_SAVE_PATH is not None:
         with open(FIXED_COURT_KEYPOINTS_SAVE_PATH, "w") as f:
@@ -95,10 +98,7 @@ if __name__ == "__main__":
 
     fixed_keypoints_detection = Keypoints(
         [
-            Keypoint(
-                id=i,
-                xy=tuple(float(x) for x in v)
-            )
+            Keypoint(id=i, xy=tuple(float(x) for x in v))
             for i, v in enumerate(SELECTED_KEYPOINTS)
         ]
     )
@@ -108,19 +108,17 @@ if __name__ == "__main__":
     polygon_zone = sv.PolygonZone(
         np.concatenate(
             (
-                np.expand_dims(keypoints_array[0], axis=0), 
-                np.expand_dims(keypoints_array[1], axis=0), 
-                np.expand_dims(keypoints_array[-1], axis=0), 
+                np.expand_dims(keypoints_array[0], axis=0),
+                np.expand_dims(keypoints_array[1], axis=0),
+                np.expand_dims(keypoints_array[-1], axis=0),
                 np.expand_dims(keypoints_array[-2], axis=0),
             ),
-            axis=0
+            axis=0,
         ),
-        frame_resolution_wh=video_info.resolution_wh,
+        # frame_resolution_wh=video_info.resolution_wh,
     )
 
-
     # FILTER FRAMES OF INTEREST (TODO)
-
 
     # Instantiate trackers
     players_tracker = PlayerTracker(
@@ -140,7 +138,7 @@ if __name__ == "__main__":
         load_path=PLAYERS_KEYPOINTS_TRACKER_LOAD_PATH,
         save_path=PLAYERS_KEYPOINTS_TRACKER_SAVE_PATH,
     )
-  
+
     ball_tracker = BallTracker(
         BALL_TRACKER_MODEL,
         BALL_TRACKER_INPAINT_MODEL,
@@ -162,10 +160,10 @@ if __name__ == "__main__":
 
     runner = TrackingRunner(
         trackers=[
-            players_tracker, 
-            player_keypoints_tracker, 
+            players_tracker,
+            player_keypoints_tracker,
             ball_tracker,
-            keypoints_tracker,    
+            keypoints_tracker,
         ],
         video_path=INPUT_VIDEO_PATH,
         inference_path=OUTPUT_VIDEO_PATH,
