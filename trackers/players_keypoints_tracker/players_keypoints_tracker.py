@@ -13,7 +13,6 @@ from trackers.tracker import Object, Tracker, NoPredictFrames
 
 @dataclass
 class PlayerKeypoint:
-
     """
     Player pose keypoint detection in a given video frame
 
@@ -29,18 +28,18 @@ class PlayerKeypoint:
 
     def asint(self) -> tuple[int, int]:
         return tuple(int(v) for v in self.xy)
-    
+
     @classmethod
     def from_json(cls, x: dict):
         return cls(**x)
-    
+
     def serialize(self) -> dict:
         return {
             "id": self.id,
             "name": self.name,
             "xy": self.xy,
         }
-    
+
     def draw(self, frame: np.ndarray) -> np.ndarray:
         """
         Draw player pose keypoint detection in a given frame
@@ -54,10 +53,9 @@ class PlayerKeypoint:
         )
 
         return frame
-    
-    
-class PlayerKeypoints:
 
+
+class PlayerKeypoints:
     """
     Player collection of pose keypoints
     """
@@ -97,52 +95,47 @@ class PlayerKeypoints:
     def __init__(self, player_keypoints: list[PlayerKeypoint]):
 
         self.player_keypoints = player_keypoints
-        
+
         if player_keypoints == []:
             self.keypoints_by_name = {}
         else:
             self.keypoints_by_name = {
-                keypoint.name: keypoint
-                for keypoint in player_keypoints
+                keypoint.name: keypoint for keypoint in player_keypoints
             }
 
     @classmethod
     def from_json(cls, x: dict):
         player_keypoints = [
-            PlayerKeypoint.from_json(keypoint)
-            for keypoint in x["player_keypoints"]
+            PlayerKeypoint.from_json(keypoint) for keypoint in x["player_keypoints"]
         ]
         return cls(player_keypoints)
-        
+
     def serialize(self) -> dict:
         return {
-            "player_keypoints": [ 
-                keypoint.serialize()
-                for keypoint in self.player_keypoints
+            "player_keypoints": [
+                keypoint.serialize() for keypoint in self.player_keypoints
             ]
         }
-    
+
     def __len__(self) -> int:
         return len(self.player_keypoints)
-    
+
     def __iter__(self) -> Iterable[PlayerKeypoint]:
         return (keypoint for keypoint in self.player_keypoints)
-    
+
     def __getitem__(self, name: str) -> PlayerKeypoint:
-        
+
         assert name in self.KEYPOINTS_NAMES
 
         return self.keypoints_by_name[name]
-    
-    def draw(self, frame: np.ndarray) -> np.ndarray:
 
+    def draw(self, frame: np.ndarray) -> np.ndarray:
         """
         Draw a straight line in-between unique player keypoint connections
         """
 
         keypoints = {
-            keypoint.name: keypoint.asint()
-            for keypoint in self.player_keypoints
+            keypoint.name: keypoint.asint() for keypoint in self.player_keypoints
         }
 
         if keypoints == {}:
@@ -152,7 +145,7 @@ class PlayerKeypoints:
 
         for connection in self.CONNECTIONS:
             cv2.line(
-                frame, 
+                frame,
                 keypoints[connection[0]],
                 keypoints[connection[1]],
                 color=(255, 0, 0),
@@ -160,10 +153,9 @@ class PlayerKeypoints:
             )
 
         return frame
-    
-    
-class PlayersKeypoints(Object):
 
+
+class PlayersKeypoints(Object):
     """
     Players pose keypoints detections in a given video frame
     """
@@ -183,29 +175,27 @@ class PlayersKeypoints(Object):
 
     def serialize(self) -> list[dict]:
         return [
-            player_keypoints.serialize()
-            for player_keypoints in self.players_keypoints
+            player_keypoints.serialize() for player_keypoints in self.players_keypoints
         ]
-    
+
     def __len__(self) -> int:
         return len(self.players_keypoints)
-    
+
     def __iter__(self) -> Iterable[PlayerKeypoints]:
         return (player_keypoints for player_keypoints in self.players_keypoints)
 
     def __getitem__(self, i: int) -> PlayerKeypoints:
         return self.players_keypoints[i]
-    
+
     def draw(self, frame: np.ndarray) -> np.ndarray:
-        
+
         for player_keypoints in self.players_keypoints:
             frame = player_keypoints.draw(frame)
 
         return frame
-    
-    
-class PlayerKeypointsTracker(Tracker):
 
+
+class PlayerKeypointsTracker(Tracker):
     """
     Tracker of players keypoints object
 
@@ -215,7 +205,7 @@ class PlayerKeypointsTracker(Tracker):
                           Options:
                             1. 640 for 640x640 images
                             2. 1280 for 1280x1280 images
-        load_path: serializable tracker results path 
+        load_path: serializable tracker results path
         save_path: path to save serializable tracker results
     """
 
@@ -223,8 +213,8 @@ class PlayerKeypointsTracker(Tracker):
     IOU = 0.7
 
     def __init__(
-        self, 
-        model_path: str, 
+        self,
+        model_path: str,
         train_image_size: Literal[640, 1280],
         batch_size: int,
         load_path: Optional[str | Path],
@@ -242,33 +232,37 @@ class PlayerKeypointsTracker(Tracker):
         self.train_image_size = train_image_size
         self.batch_size = batch_size
 
-    def video_info_post_init(self, video_info: sv.VideoInfo) -> "PlayerKeypointsTracker":
+    def video_info_post_init(
+        self, video_info: sv.VideoInfo
+    ) -> "PlayerKeypointsTracker":
         return self
-    
+
     def object(self) -> Type[Object]:
         return PlayersKeypoints
-    
+
     def draw_kwargs(self) -> dict:
         return {}
-    
+
     def __str__(self) -> str:
         return "players_keypoints_tracker"
-    
+
     def restart(self) -> None:
         self.results.restart()
 
     def processor(self, frame: np.ndarray) -> Image:
-        
+
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         return Image.fromarray(frame_rgb).resize(
             (self.train_image_size, self.train_image_size),
         )
-    
+
     def to(self, device: str) -> None:
         self.model.to(device)
 
-    def predict_sample(self, sample: Iterable[np.ndarray], **kwargs) -> list[PlayersKeypoints]:
+    def predict_sample(
+        self, sample: Iterable[np.ndarray], **kwargs
+    ) -> list[PlayersKeypoints]:
         """
         Prediction over a sample of frames
         """
@@ -277,11 +271,8 @@ class PlayerKeypointsTracker(Tracker):
         ratio_x = w_frame / self.train_image_size
         ratio_y = h_frame / self.train_image_size
 
-        sample = [
-            self.processor(frame)
-            for frame in sample
-        ]
-        
+        sample = [self.processor(frame) for frame in sample]
+
         results = self.model.predict(
             sample,
             conf=self.CONF,
@@ -294,11 +285,11 @@ class PlayerKeypointsTracker(Tracker):
         predictions = []
         for result in results:
 
-            players_keypoints = [] 
+            players_keypoints = []
 
             players_keypoints_detection = result.keypoints.xy.squeeze(0)
-            if len(players_keypoints_detection) == 2:
-                players_keypoints_detection = players_keypoints_detection # .unsqueeze(0)
+            # if len(players_keypoints_detection) == 2:
+            #     players_keypoints_detection = players_keypoints_detection.unsqueeze(0)
 
             for player_keypoints_detection in players_keypoints_detection:
                 player_keypoints = PlayerKeypoints(
@@ -307,22 +298,27 @@ class PlayerKeypointsTracker(Tracker):
                             id=i,
                             name=PlayerKeypoints.KEYPOINTS_NAMES[i],
                             xy=(
-                                keypoint[0].item() * ratio_x,
-                                keypoint[1].item() * ratio_y,
-                            )
+                                (
+                                    keypoint[0].item()
+                                    if keypoint.ndimension() > 0
+                                    else keypoint.item() * ratio_x
+                                ),
+                                (
+                                    keypoint[1].item()
+                                    if keypoint.ndimension() > 0
+                                    else keypoint.item() * ratio_y
+                                ),
+                            ),
                         )
                         for i, keypoint in enumerate(player_keypoints_detection)
                     ]
                 )
 
                 players_keypoints.append(player_keypoints)
-            
+
             predictions.append(PlayersKeypoints(players_keypoints))
-        
+
         return predictions
-    
+
     def predict_frames(self, frame_generator: Iterable[np.ndarray], **kwargs):
         raise NoPredictFrames()
-
-
-    
