@@ -160,10 +160,10 @@ if __name__ == "__main__":
 
     runner = TrackingRunner(
         trackers=[
-            players_tracker,
-            player_keypoints_tracker,
+            # players_tracker,
+            # player_keypoints_tracker,
             ball_tracker,
-            keypoints_tracker,
+            # keypoints_tracker,
         ],
         video_path=INPUT_VIDEO_PATH,
         inference_path=OUTPUT_VIDEO_PATH,
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         collect_data=COLLECT_DATA,
     )
 
-    runner.run()
+    runner.run_streaming()
 
     if COLLECT_DATA:
         data = runner.data_analytics.into_dataframe(runner.video_info.fps)
